@@ -2236,7 +2236,7 @@ function startGame(classId) {
   player.equip = { weapon: null, armor: null, boots: null, helm: null };
   player.equipHpRegen = 0;
   player.hotbar  = Array(9).fill(null);
-  player.hotbar[0] = { kind: 'event_drake', count: 1 };
+  player.hotbar[0] = null;
   player.hotbarSel = 0;
   player.invGrid = Array(27).fill(null);
   player.skillCds = [0, 0, 0, 0, 0];
