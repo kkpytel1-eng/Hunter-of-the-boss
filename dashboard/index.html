@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#5a3da0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Moje Gry">
+<link rel="manifest" href="manifest.json">
+<title>Moje Gry</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+html,body { min-height:100vh; background:#07060f; font-family:'Courier New',monospace; color:#e7e1ff; }
+
+header {
+  background:#0f0b1e; border-bottom:4px solid #5a3da0;
+  padding:16px 36px; display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:10;
+}
+header h1 { color:#ffd66b; font-size:20px; letter-spacing:4px; text-shadow:2px 2px 0 #000,4px 4px 0 #3a2060; }
+header .sub { color:#6050a0; font-size:10px; letter-spacing:2px; margin-top:3px; }
+#hStats { text-align:right; font-size:11px; color:#6050a0; letter-spacing:1px; line-height:1.9; }
+
+#grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:20px; padding:28px 36px; max-width:1280px; margin:0 auto;
+  padding-bottom:100px;
+}
+
+.card {
+  background:#14101f; border:3px solid #5a3da0; padding:20px;
+  transition:transform 110ms,border-color 110ms;
+  display:flex; flex-direction:column;
+  cursor:default;
+}
+.card:hover { transform:translateY(-5px); border-color:#ffd66b; }
+
+.cardTop { display:flex; align-items:center; gap:14px; margin-bottom:13px; }
+.cardEmoji { font-size:40px; line-height:1; flex-shrink:0; }
+.cardMeta { flex:1; min-width:0; }
+.cardName {
+  font-size:15px; font-weight:bold; color:#ffd66b; letter-spacing:2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.cardDesc { font-size:11px; color:#8070b0; margin-top:4px; line-height:1.4; }
+.tag {
+  display:inline-block; padding:2px 8px; font-size:9px;
+  letter-spacing:1px; font-weight:bold; border:1px solid; margin-top:5px;
+  color:#a060ff; border-color:#4a1a8a;
+}
+
+.srow { display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; margin-bottom:13px; }
+.sb { background:#0a0818; border:1px solid #1e1238; padding:8px 5px; text-align:center; }
+.sn { font-size:17px; font-weight:bold; color:#ffd66b; line-height:1; }
+.sn.bl { color:#8ad8ff; font-size:11px; }
+.sn.gr { color:#40ff88; font-size:11px; }
+.sl { font-size:9px; color:#5a4880; letter-spacing:1px; margin-top:3px; }
+
+.cbtns { display:flex; gap:8px; margin-top:auto; }
+.bPlay {
+  flex:1; padding:10px 8px; background:#5a3da0; color:#fff;
+  border:2px solid #ffd66b; font-family:inherit; font-size:13px;
+  letter-spacing:2px; cursor:pointer; transition:background 80ms;
+}
+.bPlay:hover { background:#7351c4; }
+.bEdit {
+  padding:10px 13px; background:transparent; color:#5a4080;
+  border:2px solid #2a1a4a; font-family:inherit; font-size:14px; cursor:pointer;
+  transition:border-color 80ms,color 80ms;
+}
+.bEdit:hover { border-color:#5a3da0; color:#c8bff5; }
+
+.empty {
+  grid-column:1/-1; text-align:center;
+  color:#3a2860; padding:80px 20px; font-size:14px; letter-spacing:2px; line-height:2.2;
+}
+
+/* Install banner */
+#installBanner {
+  display:none; position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
+  background:#14101f; border:2px solid #ffd66b; padding:12px 20px;
+  font-size:12px; letter-spacing:1px; color:#ffd66b; cursor:pointer;
+  z-index:50; white-space:nowrap; box-shadow:0 4px 20px rgba(90,61,160,.5);
+  transition:opacity 200ms;
+}
+#installBanner:hover { background:#1e1630; }
+
+/* FAB */
+#fab {
+  position:fixed; bottom:28px; right:28px;
+  width:56px; height:56px; border-radius:50%;
+  background:#5a3da0; color:#ffd66b; border:3px solid #ffd66b;
+  font-size:30px; cursor:pointer;
+  box-shadow:0 4px 22px rgba(90,61,160,.55);
+  transition:transform 80ms; z-index:100;
+  display:flex; align-items:center; justify-content:center;
+}
+#fab:hover { transform:scale(1.12); }
+
+/* Modal */
+.mbg {
+  display:none; position:fixed; inset:0;
+  background:rgba(5,3,12,.88); z-index:200;
+  align-items:center; justify-content:center;
+}
+.mbg.open { display:flex; }
+.modal {
+  background:#14101f; border:4px solid #5a3da0; padding:28px 32px;
+  width:450px; max-width:96vw;
+  box-shadow:0 0 0 3px #0a0814,0 20px 60px rgba(90,61,160,.5);
+}
+.modal h2 { color:#ffd66b; letter-spacing:3px; margin-bottom:18px; font-size:15px; }
+.fr { margin-bottom:12px; }
+.fr label { display:block; font-size:10px; color:#6050a0; letter-spacing:2px; margin-bottom:5px; }
+.fr input {
+  width:100%; padding:8px 12px;
+  background:#0a0818; color:#ffd66b; border:2px solid #2a1a4a;
+  font-family:inherit; font-size:13px; outline:none;
+}
+.fr input:focus { border-color:#5a3da0; }
+.fr .hint { font-size:10px; color:#3a2860; margin-top:4px; }
+.mbtns { display:flex; gap:8px; margin-top:18px; }
+.bSave {
+  flex:1; padding:10px; background:#5a3da0; color:#fff;
+  border:2px solid #ffd66b; font-family:inherit; font-size:14px; letter-spacing:2px; cursor:pointer;
+}
+.bSave:hover { background:#7351c4; }
+.bCancel {
+  padding:10px 16px; background:transparent; color:#5a4080;
+  border:2px solid #2a1a4a; font-family:inherit; font-size:14px; cursor:pointer;
+}
+.bCancel:hover { border-color:#5a3da0; color:#c8bff5; }
+.bDel {
+  padding:10px 13px; background:transparent; color:#884444;
+  border:2px solid #441a1a; font-family:inherit; font-size:14px; cursor:pointer;
+}
+.bDel:hover { border-color:#cc2222; color:#ff6666; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🎮 MOJE GRY</h1>
+    <div class="sub">panel dewelopera · kkpytel1-eng</div>
+  </div>
+  <div id="hStats"></div>
+</header>
+
+<div id="grid"></div>
+
+<div id="installBanner">⬇ Zainstaluj jako aplikację</div>
+<button id="fab" title="Dodaj nową grę">+</button>
+
+<div id="mbg" class="mbg">
+  <div class="modal">
+    <h2 id="mtitle">DODAJ GRĘ</h2>
+    <div class="fr">
+      <label>NAZWA GRY *</label>
+      <input id="fName" type="text" placeholder="np. Hunter of the Boss" />
+    </div>
+    <div class="fr">
+      <label>LINK DO GRY *</label>
+      <input id="fUrl" type="text" placeholder="https://..." />
+      <div class="hint">GitHub Pages, itch.io, lokalny plik...</div>
+    </div>
+    <div class="fr">
+      <label>OPIS</label>
+      <input id="fDesc" type="text" placeholder="Krótki opis..." />
+    </div>
+    <div class="fr" style="display:flex;gap:12px">
+      <div style="flex:0 0 86px">
+        <label>IKONA</label>
+        <input id="fIcon" type="text" placeholder="⚔" maxlength="2"
+          style="width:100%;text-align:center;font-size:22px;padding:5px" />
+      </div>
+      <div style="flex:1">
+        <label>GATUNEK</label>
+        <input id="fGenre" type="text" placeholder="RPG, Shooter, Puzzle..." />
+      </div>
+    </div>
+    <div class="mbtns">
+      <button class="bSave" id="mSave">✓ ZAPISZ</button>
+      <button class="bCancel" id="mCancel">ANULUJ</button>
+      <button class="bDel" id="mDel" style="display:none">🗑</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY = 'devdash_v1';
+let editIdx = -1;
+let deferredInstall = null;
+
+const DEFAULTS = [{
+  name:'Hunter of the Boss',
+  url:'https://kkpytel1-eng.github.io/Hunter-of-the-boss',
+  desc:'Otwarty świat · Bossowie · Pixel Art',
+  icon:'⚔', genre:'RPG / Survival',
+  added:td(), launches:0, lastLaunched:null
+}];
+
+function td() {
+  return new Date().toLocaleDateString('pl-PL',{day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function load() {
+  try { const r=localStorage.getItem(KEY); return r?JSON.parse(r):DEFAULTS; }
+  catch{return DEFAULTS;}
+}
+function sv(g) { localStorage.setItem(KEY,JSON.stringify(g)); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function render() {
+  const games=load();
+  const tot=games.reduce((s,g)=>s+(g.launches||0),0);
+  document.getElementById('hStats').innerHTML=
+    `Gier: <b style="color:#ffd66b">${games.length}</b><br>`+
+    `Uruchomień: <b style="color:#ffd66b">${tot}</b>`;
+
+  const grid=document.getElementById('grid');
+  if(!games.length){
+    grid.innerHTML='<div class="empty">Brak gier.<br>Kliknij <b style="color:#ffd66b">+</b> żeby dodać pierwszą.</div>';
+    return;
+  }
+  grid.innerHTML=games.map((g,i)=>{
+    const last=g.lastLaunched||'—';
+    return `<div class="card">
+      <div class="cardTop">
+        <span class="cardEmoji">${g.icon||'🎮'}</span>
+        <div class="cardMeta">
+          <div class="cardName">${esc(g.name)}</div>
+          <div class="cardDesc">${esc(g.desc||'')}</div>
+          ${g.genre?`<span class="tag">${esc(g.genre)}</span>`:''}
+        </div>
+      </div>
+      <div class="srow">
+        <div class="sb"><div class="sn">${g.launches||0}</div><div class="sl">URUCHOMIEŃ</div></div>
+        <div class="sb"><div class="sn bl">${last}</div><div class="sl">OSTATNIO</div></div>
+        <div class="sb"><div class="sn gr">${g.added||'—'}</div><div class="sl">DODANO</div></div>
+      </div>
+      <div class="cbtns">
+        <button class="bPlay" onclick="go(${i})">▶ GRAJ</button>
+        <button class="bEdit" onclick="openEdit(${i})" title="Edytuj">✎</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function go(i){
+  const games=load();
+  games[i].launches=(games[i].launches||0)+1;
+  games[i].lastLaunched=td();
+  sv(games);
+  window.open(games[i].url,'_blank');
+  render();
+}
+
+// Modal
+document.getElementById('fab').onclick=()=>openModal(-1);
+document.getElementById('mCancel').onclick=closeModal;
+document.getElementById('mbg').onclick=e=>{if(e.target===e.currentTarget)closeModal();};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+function openModal(idx){
+  editIdx=idx;
+  const games=load();
+  const g=idx>=0?games[idx]:{};
+  document.getElementById('mtitle').textContent=idx>=0?'EDYTUJ GRĘ':'DODAJ GRĘ';
+  document.getElementById('fName').value=g.name||'';
+  document.getElementById('fUrl').value=g.url||'';
+  document.getElementById('fDesc').value=g.desc||'';
+  document.getElementById('fIcon').value=g.icon||'';
+  document.getElementById('fGenre').value=g.genre||'';
+  document.getElementById('mDel').style.display=idx>=0?'':'none';
+  document.getElementById('mbg').classList.add('open');
+  document.getElementById('fName').focus();
+}
+function openEdit(i){openModal(i);}
+function closeModal(){document.getElementById('mbg').classList.remove('open');}
+
+document.getElementById('mSave').onclick=()=>{
+  const name=document.getElementById('fName').value.trim();
+  const url=document.getElementById('fUrl').value.trim();
+  if(!name||!url){alert('Podaj nazwę i link!');return;}
+  const games=load();
+  const e={
+    name,url,
+    desc:document.getElementById('fDesc').value.trim(),
+    icon:document.getElementById('fIcon').value.trim()||'🎮',
+    genre:document.getElementById('fGenre').value.trim(),
+    added:editIdx>=0?games[editIdx].added:td(),
+    launches:editIdx>=0?games[editIdx].launches:0,
+    lastLaunched:editIdx>=0?games[editIdx].lastLaunched:null,
+  };
+  if(editIdx>=0)games[editIdx]=e; else games.push(e);
+  sv(games); closeModal(); render();
+};
+
+document.getElementById('mDel').onclick=()=>{
+  if(!confirm('Usunąć tę grę z dashboardu?'))return;
+  const games=load();
+  games.splice(editIdx,1);
+  sv(games); closeModal(); render();
+};
+
+// PWA install prompt
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredInstall=e;
+  document.getElementById('installBanner').style.display='block';
+});
+document.getElementById('installBanner').onclick=async()=>{
+  if(!deferredInstall)return;
+  deferredInstall.prompt();
+  const{outcome}=await deferredInstall.userChoice;
+  if(outcome==='accepted') document.getElementById('installBanner').style.display='none';
+  deferredInstall=null;
+};
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('installBanner').style.display='none';
+});
+
+// Service Worker
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+render();
+</script>
+</body>
+</html>
