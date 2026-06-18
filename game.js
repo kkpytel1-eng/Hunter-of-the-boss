@@ -2153,6 +2153,7 @@ function refreshSaveButtons() {
 function continueGame() {
   const data = loadWorldData();
   if (!data) return;
+  const savedBuildings = (data.buildings || []).slice();
   startGame(data.classId);
   // Przywróć zapisany stan
   player.x = data.x || player.x;
@@ -2185,14 +2186,11 @@ function continueGame() {
   state.time      = data.time     || 0;
   state.dayTime   = data.dayTime  || 0.18;
   state.craftingLevel = data.craftingLevel || 1;
-  // Odbuduj budynki
-  if (data.buildings && data.buildings.length) {
-    for (const b of data.buildings) {
-      if (!state.buildings.find(ex => ex.type === b.type && Math.abs(ex.x-b.x)<4 && Math.abs(ex.y-b.y)<4)) {
-        const def = BUILDINGS.find(bd => bd.type === b.type);
-        if (def) state.buildings.push({ ...def, x: b.x, y: b.y });
-      }
-    }
+  // Odbuduj budynki (savedBuildings zapisane przed startGame, który czyści tablicę)
+  state.buildings.length = 0;
+  for (const b of savedBuildings) {
+    const def = BUILDINGS.find(bd => bd.type === b.type);
+    if (def) state.buildings.push({ ...def, x: b.x, y: b.y });
   }
   // Wygeneruj chunki wokół przywróconej pozycji (nie wokół domyślnego spawnu 500000,500000)
   generateDecor();
