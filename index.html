@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8" />
+<meta name="application-name" content="Hunter of the Boss" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Hunter of the Boss</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="gameWrapper">
+    <div id="hud">
+      <div id="hudLeft">
+        <div class="bar"><span>HP</span><div class="barTrack"><div id="hpBar" class="barFill hp"></div></div></div>
+        <div class="bar"><span>MP</span><div class="barTrack"><div id="mpBar" class="barFill mp"></div></div></div>
+      </div>
+      <div id="hudCenter">
+        <div id="waveLabel">CZAS: 0s</div>
+        <div id="enemyCount">Wrogowie: 0</div>
+      </div>
+      <div id="hudRight">
+        <div id="moneyCount" style="color:#ffd700;text-shadow:1px 1px 0 #000;font-weight:bold;">$0</div>
+        <div id="score">Punkty: 0</div>
+        <div id="killCount">Pokonani: 0</div>
+      </div>
+    </div>
+
+    <div id="bossBarWrap" class="hidden">
+      <div id="bossName">BOSS — Mroczny Lichbringer</div>
+      <div class="barTrack big"><div id="bossBar" class="barFill boss"></div></div>
+    </div>
+
+    <canvas id="game" width="960" height="600" tabindex="-1"></canvas>
+  </div>
+
+  <div id="overlay" class="overlay">
+
+    <!-- TWORZENIE KONTA — pokazywane przy pierwszym uruchomieniu -->
+    <div id="accountSetup" class="panel hidden">
+      <h1>HUNTER OF THE BOSS</h1>
+      <p class="sub" style="font-size:17px;margin-bottom:18px">Podaj swoją nazwę gracza:</p>
+      <input id="playerNameInput" type="text" maxlength="20" placeholder="Twoja nazwa..." autocomplete="off" spellcheck="false" />
+      <p id="nameError" class="sub small" style="color:#ff4444;margin:8px 0 0;display:none">Nazwa musi mieć od 2 do 20 znaków!</p>
+      <button id="confirmNameBtn" style="margin-top:18px;padding:12px 40px;font-size:17px;">GRAJ →</button>
+    </div>
+
+    <div id="mainMenu" class="panel wide">
+      <h1>HUNTER OF THE BOSS</h1>
+      <p id="mainMenuGreet" class="sub" style="color:#40ff88;font-size:14px;letter-spacing:2px;margin:2px 0 8px;"></p>
+      <p class="sub">Otwarty świat · Bossowie · Pixel Art</p>
+      <div class="mainMenuModeRow">
+        <button id="singlePlayerBtn" class="modeBtn modeBtnSingle">
+          <span class="modeBtnIcon">⚔</span>
+          <span class="modeBtnLabel">SINGLE PLAYER</span>
+          <span class="modeBtnSub">Graj solo</span>
+        </button>
+        <button id="multiPlayerBtn" class="modeBtn modeBtnMulti" disabled>
+          <span class="modeBtnIcon">🌐</span>
+          <span class="modeBtnLabel">MULTI PLAYER</span>
+          <span class="modeBtnSub">Wkrótce…</span>
+        </button>
+      </div>
+      <button id="shopBtn" style="margin-top:10px;padding:10px 28px;background:#1a0a3a;color:#d0a0ff;border:3px solid #7a3da0;font-family:inherit;font-size:15px;letter-spacing:2px;cursor:pointer;">🏪 SKLEP</button>
+      <button id="changeNameBtn" style="margin-top:6px;padding:6px 18px;background:transparent;color:#705880;border:1px solid #402a58;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;">✎ Zmień nazwę gracza</button>
+      <p class="sub small" style="margin-top:16px">Sterowanie: <b>WASD</b> — ruch, <b>Mysz</b> — celowanie, <b>LPM</b> — atak, <b>Spacja</b> — skill, <b>Q</b> — dash</p>
+      <p class="sub small">Bossowie co ~25s · każda runda trudniejsza · Lich → Demon → Królowa → Tytan</p>
+    </div>
+
+    <!-- SINGLE PLAYER SUB-MENU -->
+    <div id="singleMenu" class="panel wide hidden">
+      <h1>SINGLE PLAYER</h1>
+      <p class="sub">Wybierz tryb gry:</p>
+      <div class="singleMenuOptions">
+        <button id="continueBtn" class="singleOptBtn singleOptContinue" style="display:none">
+          <span class="singleOptIcon">💾</span>
+          <span class="singleOptLabel">KONTYNUUJ</span>
+          <span class="singleOptSub">Wczytaj poprzednią grę</span>
+        </button>
+        <button id="createWorldBtn" class="singleOptBtn">
+          <span class="singleOptIcon">🌍</span>
+          <span class="singleOptLabel">STWÓRZ NOWY ŚWIAT</span>
+          <span class="singleOptSub">Wybierz klasę i zacznij przygodę</span>
+        </button>
+        <button id="myCharsBtn" class="singleOptBtn">
+          <span class="singleOptIcon">👤</span>
+          <span class="singleOptLabel">TWOJE POSTACIE</span>
+          <span class="singleOptSub">Zagraj odblokowaną klasą</span>
+        </button>
+      </div>
+      <button id="deleteSaveBtn" style="display:none;margin-top:8px;padding:5px 14px;background:transparent;color:#884444;border:1px solid #662222;font-family:inherit;font-size:11px;letter-spacing:1px;cursor:pointer;">🗑 Usuń zapis świata</button>
+      <button id="singleBackBtn" class="backBtn" style="margin-top:14px">← POWRÓT</button>
+    </div>
+
+    <!-- TWOJE POSTACIE -->
+    <div id="charsMenu" class="panel wide hidden">
+      <h1>TWOJE POSTACIE</h1>
+      <p class="sub small" style="margin:0 0 12px">Kliknij postać, aby zagrać:</p>
+      <div id="myCharsGrid" class="classGrid" style="max-height:360px;overflow-y:auto"></div>
+      <p id="noCharsMsg" class="sub small" style="display:none;color:#806090;margin:20px 0">
+        Nie masz jeszcze żadnych postaci.<br>Kup klasy w 🏪 Sklepie!
+      </p>
+      <button id="charsBackBtn" class="backBtn" style="margin-top:14px">← POWRÓT</button>
+    </div>
+
+    <div id="shopMenu" class="panel wide hidden">
+      <h1>SKLEP</h1>
+      <p id="shopWalletDisplay" class="sub" style="color:#ffd700;font-weight:bold;margin:0 0 6px"></p>
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:10px">
+        <button class="shopTab" id="shopTabCharsBtn"  onclick="shopShowTab('chars')"  style="padding:5px 14px;background:#2a1060;color:#d0a0ff;border:2px solid #7a3da0;font-family:inherit;font-size:12px;cursor:pointer;">POSTACIE</button>
+        <button class="shopTab" id="shopTabSkillsBtn" onclick="shopShowTab('skills')" style="padding:5px 14px;background:#1a0a30;color:#a080cc;border:2px solid #5a2d70;font-family:inherit;font-size:12px;cursor:pointer;">UMIEJĘTNOŚCI</button>
+        <button class="shopTab" id="shopTabCtrlBtn"   onclick="shopShowTab('ctrl')"   style="padding:5px 14px;background:#1a0a30;color:#a080cc;border:2px solid #5a2d70;font-family:inherit;font-size:12px;cursor:pointer;">STEROWANIE</button>
+        <button class="shopTab" id="shopTabPrismBtn"  onclick="shopShowTab('prism')"  style="padding:5px 14px;background:#1a0028;color:#cc44ff;border:2px solid #660099;font-family:inherit;font-size:12px;cursor:pointer;">SKRZYNKA ???</button>
+      </div>
+
+      <div id="shopTabChars">
+        <p class="sub small" style="margin:0 0 8px">Kliknij kartę aby kupić lub wybrać klasę:</p>
+        <div class="classGrid" id="shopClassGrid"></div>
+        <div class="classGridSep">⚔ KLASY ELITARNE ($250) ⚔</div>
+        <div class="classGrid" id="shopEliteGrid"></div>
+        <div class="classGridSep epic">✦ KLASY MITYCZNE ($3500) ✦</div>
+        <div class="classGrid" id="shopEpicGrid"></div>
+        <div class="classGridSep legendary">★ KLASY LEGENDARNE ($4000) ★</div>
+        <div class="classGrid" id="shopLegendaryGrid"></div>
+        <div class="classGridSep" style="background:#1a0028;color:#660099;border-color:#440066">??? KLASA VOID ($4500) ???</div>
+        <div class="classGrid" id="shopVoidGrid"></div>
+      </div>
+
+      <div id="shopTabPrism" style="display:none">
+        <div style="text-align:center;padding:10px">
+          <div style="font-size:18px;color:#cc44ff;margin-bottom:6px">SKRZYNKA PRYSMATYCZNA</div>
+          <div style="color:#8866aa;font-size:11px;margin-bottom:12px">Zawiera losową potężną klasę</div>
+          <div style="background:#0a0018;border:2px solid #440066;padding:10px;margin-bottom:12px;font-size:11px;color:#9966cc;line-height:1.8">
+            <b style="color:#cc44ff">Szanse:</b><br>
+            <span style="color:#cc44ff">84.9%</span> — Klasa Mityczna<br>
+            <span style="color:#ffd700">15.0%</span> — Klasa Legendarna<br>
+            <span style="color:#ff44ff">0.1%</span> — <b>??? (VOID)</b>
+          </div>
+          <div style="color:#ffd700;font-size:16px;margin-bottom:12px">Cena: $4500</div>
+          <button onclick="openPrismBox()" style="padding:10px 28px;background:linear-gradient(135deg,#220033,#440066);color:#cc44ff;border:2px solid #660099;font-family:inherit;font-size:14px;cursor:pointer;letter-spacing:1px">OTWÓRZ SKRZYNKĘ</button>
+          <div id="prismBoxResult" style="margin-top:12px;font-size:13px;min-height:20px;color:#cc44ff"></div>
+        </div>
+      </div>
+
+      <div id="shopTabSkills" style="display:none">
+        <p class="sub small" style="margin:0 0 6px">Wybierz klasę, aby kupić umiejętności:</p>
+        <div id="shopSkillClassSelector" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-bottom:10px"></div>
+        <div id="shopSkillsList" style="max-height:260px;overflow-y:auto;min-height:60px">
+          <p class="sub small" style="color:#604060">← Wybierz klasę po lewej</p>
+        </div>
+      </div>
+
+      <div id="shopTabCtrl" style="display:none">
+        <div class="sub small" style="text-align:left;max-width:520px;margin:0 auto;line-height:1.9">
+          <b style="color:#ffd66b">— Sterowanie —</b><br>
+          <b>WASD</b> ruch · <b>Q</b> dash · <b>Mysz LPM</b> atak podstawowy<br><br>
+          <b style="color:#ff6633">Spacja</b> — Umiejętność 1 (trzymaj)<br>
+          <b style="color:#ffd700">X</b> — Umiejętność 2 · <b style="color:#44ff88">C</b> — Umiejętność 3<br>
+          <b style="color:#4488ff">V</b> — Umiejętność 4 · <b style="color:#dd44ff">R</b> — Umiejętność 5<br><br>
+          <b>Scroll / 1-9</b> — zmiana slotu hotbara<br>
+          <b>F</b> — użyj przedmiotu z hotbara<br><br>
+          <b>E</b> kopaj/rzemiosło/piec · <b>B</b> budowanie · <b>I</b> ekwipunek
+        </div>
+      </div>
+
+      <button id="shopBackBtn" class="backBtn" style="margin-top:12px">← POWRÓT</button>
+    </div>
+
+    <div id="classSelect" class="panel wide hidden">
+      <h1>WYBIERZ KLASĘ</h1>
+      <p id="walletDisplay" class="sub" style="color:#ffd700;font-weight:bold;margin:0 0 8px"></p>
+      <div class="classGrid">
+        <button class="classCard" data-class="mage">
+          <div class="classIcon" id="iconMage"></div>
+          <div class="className">CZARODZIEJ</div>
+          <div class="classStats">90 HP · 100 MP · Szybkość 180</div>
+          <div class="classDesc">LPM: kula ognia<br>Spacja: miotacz płomieni<br><span style="color:#a060ff">Drop: Zwoje +obrażenia</span></div>
+        </button>
+        <button class="classCard" data-class="archer">
+          <div class="classIcon" id="iconArcher"></div>
+          <div class="className">ŁUCZNIK</div>
+          <div class="classStats">75 HP · 80 MP · Szybkość 220</div>
+          <div class="classDesc">LPM: szybkie strzały<br>Spacja: multishot (3 strzały)<br><span style="color:#ffd66b">Drop: Kołczany +przebicie</span></div>
+        </button>
+        <button class="classCard" data-class="doctor">
+          <div class="classIcon" id="iconDoctor"></div>
+          <div class="className">DOKTOREK</div>
+          <div class="classStats">120 HP · 120 MP · Szybkość 160</div>
+          <div class="classDesc">LPM: strzykawki<br>Spacja: aura leczenia<br><span style="color:#9bff9b">Drop: Apteczki +leczenie</span></div>
+        </button>
+        <button class="classCard" data-class="knight">
+          <div class="classIcon" id="iconKnight"></div>
+          <div class="className">RYCERZ</div>
+          <div class="classStats">155 HP · 60 MP · Szybkość 148</div>
+          <div class="classDesc">LPM: cios mieczem<br>Spacja: okrzyk bojowy (aura)<br><span style="color:#c0d0ff">Drop: Odłamki +atak/szybkość</span></div>
+        </button>
+        <button class="classCard" data-class="shaman">
+          <div class="classIcon" id="iconShaman"></div>
+          <div class="className">SZAMAN</div>
+          <div class="classStats">88 HP · 130 MP · Szybkość 172</div>
+          <div class="classDesc">LPM: piorun (przebija)<br>Spacja: burza (5 piorunów)<br><span style="color:#8ae8ff">Drop: Totemy +magia/MP</span></div>
+        </button>
+        <button class="classCard" data-class="ninja">
+          <div class="classIcon" id="iconNinja"></div>
+          <div class="className">NINJA</div>
+          <div class="classStats">65 HP · 72 MP · Szybkość 265</div>
+          <div class="classDesc">LPM: shuriken (rotujący)<br>Spacja: cień — 8 gwiazd<br><span style="color:#c8c8d8">Drop: Kunai +szybkość strzału</span></div>
+        </button>
+      </div>
+      <div class="classGridSep">⚔ NOWE KLASY ⚔</div>
+      <div class="classGrid">
+        <button class="classCard classElite" data-class="gravedigger">
+          <div class="classIcon" id="iconGravedigger"></div>
+          <div class="className">GRABARZ</div>
+          <div class="classStats">100 HP · 120 MP · Szybkość 162</div>
+          <div class="classDesc">LPM: kości (przebiją 2)<br>Spacja: atak z pod ziemi<br><span style="color:#8a7a60">Drop: Totem +magia/MP</span></div>
+        </button>
+        <button class="classCard classElite" data-class="berserker">
+          <div class="classIcon" id="iconBerserker"></div>
+          <div class="className">BERSERKER</div>
+          <div class="classStats">190 HP · 40 MP · Szybkość 240</div>
+          <div class="classDesc">LPM: topór (ogromne DMG)<br>Spacja: szał — aura obrażeń<br><span style="color:#ff8844">Drop: Odłamek +obrażenia</span></div>
+        </button>
+        <button class="classCard classElite" data-class="pyromancer">
+          <div class="classIcon" id="iconPyromancer"></div>
+          <div class="className">PIROMANTA</div>
+          <div class="classStats">76 HP · 148 MP · Szybkość 165</div>
+          <div class="classDesc">LPM: inferno (eksploduje!)<br>Spacja: deszcz ognia<br><span style="color:#ff8822">Drop: Zwój +obrażenia</span></div>
+        </button>
+        <button class="classCard classElite" data-class="cleric">
+          <div class="classIcon" id="iconCleric"></div>
+          <div class="className">KAPŁAN</div>
+          <div class="classStats">135 HP · 168 MP · Szybkość 148</div>
+          <div class="classDesc">LPM: święty promień (leczy)<br>Spacja: błogosławieństwo<br><span style="color:#ffffaa">Drop: Apteczka +leczenie</span></div>
+        </button>
+        <button class="classCard classElite" data-class="hunter">
+          <div class="classIcon" id="iconHunter"></div>
+          <div class="className">ŁOWCA</div>
+          <div class="classStats">80 HP · 90 MP · Szybkość 245</div>
+          <div class="classDesc">LPM: bumerang (wraca!)<br>Spacja: pułapka (wybucha)<br><span style="color:#88aa44">Drop: Kołczan +przebicie</span></div>
+        </button>
+        <button class="classCard classElite" data-class="shadow">
+          <div class="classIcon" id="iconShadow"></div>
+          <div class="className">CIEŃ</div>
+          <div class="classStats">65 HP · 100 MP · Szybkość 300</div>
+          <div class="classDesc">LPM: podwójne ostrze cienia<br>Spacja: teleport + rozbłysk<br><span style="color:#aa44ff">Drop: Kunai +szybkość strzału</span></div>
+        </button>
+      </div>
+      <div class="classGridSep epic">✦ KLASY EPICKIE ($600) ✦</div>
+      <div class="classGrid">
+        <button class="classCard classEpic" data-class="necromancer">
+          <div class="classIcon" id="iconNecromancer"></div>
+          <div class="className">NEKROMANTA</div>
+          <div class="classStats">88 HP · 195 MP · Szybkość 142</div>
+          <div class="classDesc">LPM: trucizna (venom, silna)<br>Spacja: krąg jadu<br><span style="color:#66dd44">Drop: Totem +magia/MP</span></div>
+        </button>
+        <button class="classCard classEpic" data-class="paladin">
+          <div class="classIcon" id="iconPaladin"></div>
+          <div class="className">PALADYN</div>
+          <div class="classStats">205 HP · 78 MP · Szybkość 128</div>
+          <div class="classDesc">LPM: święte ostrze (ogromne DMG)<br>Spacja: boska aura<br><span style="color:#ffe8aa">Drop: Odłamek +obrażenia</span></div>
+        </button>
+        <button class="classCard classEpic" data-class="druid">
+          <div class="classIcon" id="iconDruid"></div>
+          <div class="className">DRUID</div>
+          <div class="classStats">104 HP · 162 MP · Szybkość 160</div>
+          <div class="classDesc">LPM: kolce natury (pierce 4)<br>Spacja: krąg kolców<br><span style="color:#66dd44">Drop: Totem +magia/MP</span></div>
+        </button>
+        <button class="classCard classEpic" data-class="vampire">
+          <div class="classIcon" id="iconVampire"></div>
+          <div class="className">WAMPIR</div>
+          <div class="classStats">78 HP · 100 MP · Szybkość 258</div>
+          <div class="classDesc">LPM: krwawa kula (leczy!)<br>Spacja: krąg krwi<br><span style="color:#cc1122">Drop: Apteczka +leczenie</span></div>
+        </button>
+        <button class="classCard classEpic" data-class="frostmage">
+          <div class="classIcon" id="iconFrostmage"></div>
+          <div class="className">LODOWY MAG</div>
+          <div class="classStats">74 HP · 205 MP · Szybkość 148</div>
+          <div class="classDesc">LPM: kula mrozu (pierce 2)<br>Spacja: blizzard<br><span style="color:#88ddff">Drop: Zwój +obrażenia</span></div>
+        </button>
+        <button class="classCard classEpic" data-class="stormcaller">
+          <div class="classIcon" id="iconStormcaller"></div>
+          <div class="className">WŁADCA BURZY</div>
+          <div class="classStats">80 HP · 152 MP · Szybkość 158</div>
+          <div class="classDesc">LPM: piorun (pierce 4, mega szybki)<br>Spacja: burza piorunów<br><span style="color:#aaeeff">Drop: Totem +magia/MP</span></div>
+        </button>
+        <button class="classCard classEpic" data-class="runeknight">
+          <div class="classIcon" id="iconRuneknight"></div>
+          <div class="className">RUNOWY RYCERZ</div>
+          <div class="classStats">178 HP · 92 MP · Szybkość 136</div>
+          <div class="classDesc">LPM: runiczne ostrze (ogromne r)<br>Spacja: runiczna aura<br><span style="color:#cc44ff">Drop: Odłamek +obrażenia</span></div>
+        </button>
+        <button class="classCard classEpic" data-class="illusionist">
+          <div class="classIcon" id="iconIllusionist"></div>
+          <div class="className">ILUZJONISTA</div>
+          <div class="classStats">64 HP · 122 MP · Szybkość 268</div>
+          <div class="classDesc">LPM: podwójne ostrze iluzji<br>Spacja: ostrza w krąg<br><span style="color:#cc55ff">Drop: Kunai +szybkość strzału</span></div>
+        </button>
+      </div>
+      <div class="classGridSep legendary">★ KLASY LEGENDARNE ($800) ★</div>
+      <div class="classGrid">
+        <button class="classCard classLegendary" data-class="crusader">
+          <div class="classIcon" id="iconCrusader"></div>
+          <div class="className">KRZYŻOWIEC</div>
+          <div class="classStats">180 HP · 85 MP · Szybkość 132</div>
+          <div class="classDesc">LPM: święty młot (pierce 2)<br>Spacja: święta aura ostrzy<br><span style="color:#ffd66b">Drop: Odłamek +obrażenia</span></div>
+        </button>
+        <button class="classCard classLegendary" data-class="witch">
+          <div class="classIcon" id="iconWitch"></div>
+          <div class="className">WIEDŹMA</div>
+          <div class="classStats">68 HP · 155 MP · Szybkość 180</div>
+          <div class="classDesc">LPM: klątwa hex (trucizna)<br>Spacja: salwa klątw<br><span style="color:#88ff44">Drop: Totem +magia/MP</span></div>
+        </button>
+        <button class="classCard classLegendary" data-class="alchemist">
+          <div class="classIcon" id="iconAlchemist"></div>
+          <div class="className">ALCHEMIK</div>
+          <div class="classStats">100 HP · 112 MP · Szybkość 175</div>
+          <div class="classDesc">LPM: bomba kwasowa (eksploduje)<br>Spacja: brew — leczy + bomby<br><span style="color:#9bff9b">Drop: Apteczka +leczenie</span></div>
+        </button>
+        <button class="classCard classLegendary" data-class="bard">
+          <div class="classIcon" id="iconBard"></div>
+          <div class="className">BARD</div>
+          <div class="classStats">82 HP · 140 MP · Szybkość 198</div>
+          <div class="classDesc">LPM: fala dźwiękowa (5 piorunów)<br>Spacja: szeroki wachlarz sonic<br><span style="color:#aaeeff">Drop: Zwój +obrażenia</span></div>
+        </button>
+      </div>
+      <button id="backBtn" class="backBtn">← POWRÓT</button>
+    </div>
+
+  </div>
+
+  <div id="endOverlay" class="overlay hidden">
+    <div class="panel">
+      <h1 id="endTitle">KONIEC</h1>
+      <p id="endText" class="sub"></p>
+      <button id="restartBtn">JESZCZE RAZ</button>
+    </div>
+  </div>
+
+  <div id="pauseOverlay" class="overlay hidden">
+    <div class="panel">
+      <h1>PAUZA</h1>
+      <button id="resumeBtn">▶ WRÓĆ DO GRY</button>
+      <button id="saveNowBtn" style="margin-top:10px;padding:10px 28px;background:#0a2a0a;color:#40ff88;border:2px solid #1a6a38;font-family:inherit;font-size:14px;letter-spacing:2px;cursor:pointer;">💾 ZAPISZ ŚWIAT</button>
+      <button id="menuBtn" style="margin-top:10px;background:#3a2060">⬅ MENU GŁÓWNE</button>
+      <p id="saveConfirmMsg" style="display:none;margin:6px 0 0;color:#40ff88;font-size:12px;letter-spacing:1px;">✓ Świat zapisany!</p>
+    </div>
+  </div>
+
+  <!-- ======= MOBILNE STEROWANIE ======= -->
+  <div id="mobileControls">
+    <!-- wizualizacja joysticka (pozycjonowana przez JS) -->
+    <div id="joyBase"><div id="joyKnob"></div></div>
+
+    <!-- lewy dół: E + pauza -->
+    <div id="mBtnAreaL">
+      <button class="mBtn mSmBtn" id="mBtnPause">⏸</button>
+      <button class="mBtn mSmBtn" id="mBtnE">E</button>
+    </div>
+
+    <!-- prawy dół: X, DASH, SKILL1 -->
+    <div id="mBtnAreaR">
+      <div class="mBtnRow">
+        <button class="mBtn mMdBtn" id="mBtnX">✹</button>
+        <button class="mBtn mMdBtn mBtnDash" id="mBtnDash">⚡</button>
+      </div>
+      <div class="mBtnRow" style="justify-content:center">
+        <button class="mBtn mLgBtn" id="mBtnSkill1">★</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
